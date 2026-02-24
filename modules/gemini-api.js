@@ -4,8 +4,8 @@
  */
 window.GeminiAPI = {
     API_BASE: 'https://generativelanguage.googleapis.com/v1beta/models',
-    // Model priority chain — tries each until one works
-    MODELS: ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash'],
+    // Cập nhật quan trọng: Danh sách model chuẩn cho Paid Tier (đã xóa bản 2.5 lỗi)
+    MODELS: ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'],
     RETRY_DELAY_MS: 5000, // Wait 5s before retrying after 429
     MAX_RETRIES: 1,       // Retry once per model before moving to next
     STORAGE_KEY: 'ytcd_gemini_api_key',
