@@ -1,0 +1,13 @@
+# Browser / OS garbage
+.DS_Store
+Thumbs.db
+
+# Project rác
+*.log
+node_modules/
+.vscode/
+.idea/
+
+# Session/Local data (nếu có lưu temp)
+session_data/
+temp/

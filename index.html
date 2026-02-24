@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Creator Dashboard</title>
+    <meta name="description" content="Dashboard tự động hóa quy trình tạo video YouTube">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body data-channel="finance">
+    <div class="app-layout">
+
+        <!-- ═══ HEADER ═══ -->
+        <header class="header">
+            <div class="header-left">
+                <div class="header-logo">
+                    <span class="icon">🎬</span>
+                    <span class="text-gradient">Creator Dashboard</span>
+                </div>
+                <div class="channel-switcher">
+                    <button class="channel-btn active" data-channel="finance" onclick="app.switchChannel('finance')">
+                        💰 Đầu tư & Tài chính
+                    </button>
+                    <button class="channel-btn" data-channel="psychology" onclick="app.switchChannel('psychology')">
+                        🧠 Giải mã Tâm lý
+                    </button>
+                </div>
+            </div>
+            <div class="header-right">
+                <span class="project-name" id="projectName">Dự án mới</span>
+                <button class="btn btn-sm btn-secondary" onclick="app.saveProject()">💾 Lưu</button>
+                <button class="btn btn-sm btn-ghost" onclick="app.showSettings()">⚙️</button>
+            </div>
+        </header>
+
+        <!-- ═══ SIDEBAR ═══ -->
+        <aside class="sidebar">
+            <!-- Pipeline Steps -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Pipeline Sản Xuất</div>
+                <div class="nav-item active" data-panel="research" onclick="app.switchPanel('research')">
+                    <span class="step-num">1</span>
+                    <span>Nghiên Cứu Từ Khóa</span>
+                    <span class="status-dot"></span>
+                </div>
+                <div class="nav-item" data-panel="script" onclick="app.switchPanel('script')">
+                    <span class="step-num">2</span>
+                    <span>Kịch Bản</span>
+                    <span class="status-dot"></span>
+                </div>
+                <div class="nav-item" data-panel="scenes" onclick="app.switchPanel('scenes')">
+                    <span class="step-num">3</span>
+                    <span>Phân Cảnh & Style</span>
+                    <span class="status-dot"></span>
+                </div>
+                <div class="nav-item" data-panel="seo" onclick="app.switchPanel('seo')">
+                    <span class="step-num">4</span>
+                    <span>SEO & Metadata</span>
+                    <span class="status-dot"></span>
+                </div>
+                <div class="nav-item" data-panel="thumbnail" onclick="app.switchPanel('thumbnail')" id="navThumbnail">
+                    <span class="step-num">5</span>
+                    <span>Thumbnail</span>
+                    <span class="status-dot"></span>
+                </div>
+                <div class="nav-item" data-panel="watermark" onclick="app.switchPanel('watermark')">
+                    <span class="step-num">6</span>
+                    <span>Xóa Watermark</span>
+                    <span class="status-dot"></span>
+                </div>
+            </div>
+
+            <!-- Tools -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Công Cụ</div>
+                <div class="nav-item" data-panel="projects" onclick="app.switchPanel('projects')">
+                    <span class="step-num">📁</span>
+                    <span>Quản Lý Dự Án</span>
+                </div>
+                <div class="nav-item" data-panel="settings" onclick="app.switchPanel('settings')">
+                    <span class="step-num">⚙️</span>
+                    <span>Cài Đặt</span>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="sidebar-section"
+                style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border);">
+                <div style="padding: 0 0.75rem;">
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                        TRẠNG THÁI DỰ ÁN
+                    </div>
+                    <div id="pipelineStatus" style="font-size: 0.8rem; color: var(--text-secondary);">
+                        Bước 1 / 6 — Nghiên cứu từ khóa
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ═══ MAIN CONTENT ═══ -->
+        <main class="main-content">
+
+            <!-- ═══ PANEL 1: KEYWORD RESEARCH ═══ -->
+            <div class="panel active" id="panel-research">
+                <div class="panel-header">
+                    <h2>🔍 Nghiên Cứu Từ Khóa</h2>
+                    <p>Phân tích keyword, đối thủ và tìm góc tiếp cận trước khi viết kịch bản</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">🎯 Keyword Seed</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Nhập từ khóa chính muốn nghiên cứu</label>
+                        <input type="text" class="input-field" id="researchKeyword"
+                            placeholder="Ví dụ: đầu tư chứng khoán cho người mới">
+                    </div>
+                    <div class="btn-row">
+                        <button class="btn btn-primary btn-lg" id="researchBtn" onclick="app.runResearch()">
+                            🔍 Nghiên Cứu
+                        </button>
+                    </div>
+                </div>
+
+                <div id="researchResults" style="display: none;"></div>
+
+                <div id="researchFooter" style="display: none;">
+                    <div class="btn-row" style="justify-content: flex-end; margin-top: 1rem;">
+                        <button class="btn btn-primary" onclick="app.proceedToScript()">
+                            Tiếp → Viết Kịch Bản (dùng keyword này)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ PANEL 2: SCRIPT WRITER ═══ -->
+            <div class="panel" id="panel-script">
+                <div class="panel-header">
+                    <h2>📝 Kịch Bản Video</h2>
+                    <p>Tạo kịch bản tối ưu cho YouTube với hook, retention patterns và CTA</p>
+                </div>
+
+                <!-- Topic & Options -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">🎯 Chủ Đề & Cấu Hình</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Chủ đề video / Keyword chính</label>
+                        <input type="text" class="input-field" id="scriptTopic"
+                            placeholder="Ví dụ: 5 sai lầm phổ biến khi đầu tư chứng khoán">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
+                        <div class="form-group">
+                            <label>Loại video</label>
+                            <select class="select-field" id="videoType">
+                                <option value="long">Video dài (5-15 phút)</option>
+                                <option value="short">YouTube Shorts (< 60s)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Phong cách kịch bản</label>
+                            <select class="select-field" id="scriptStyle">
+                                <option value="storytelling">🎭 Kể Chuyện (Storytelling)</option>
+                                <option value="step-by-step">📋 Hướng Dẫn (Step-by-Step)</option>
+                                <option value="myth-buster">💥 Phá Lầm Tưởng (Myth Buster)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Ngôn ngữ</label>
+                            <select class="select-field" id="scriptLang">
+                                <option value="vi">🇻🇳 Tiếng Việt</option>
+                                <option value="en">🇺🇸 English</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Ghi chú thêm (tùy chọn)</label>
+                        <textarea class="textarea-field" id="scriptNotes" rows="2"
+                            placeholder="Ví dụ: Nhắm đến người mới bắt đầu, giọng văn thân thiện..."></textarea>
+                    </div>
+                    <div class="btn-row">
+                        <button class="btn btn-primary btn-lg" id="generateScriptBtn" onclick="app.generateScript()">
+                            ✨ Tạo Kịch Bản
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Script Output -->
+                <div class="script-editor" id="scriptEditor" style="display: none;">
+                    <div class="script-toolbar">
+                        <div class="card-title">📄 Kịch Bản</div>
+                        <div class="stats">
+                            <span id="wordCount">0 từ</span>
+                            <span id="readTime">~0 phút</span>
+                        </div>
+                        <div class="btn-row">
+                            <button class="copy-btn" onclick="app.copyScript()">📋 Copy</button>
+                            <button class="copy-btn" onclick="app.copyScriptForTTS()"
+                                title="Copy lời thoại sạch cho AI Studio TTS">🎙️ Copy cho TTS</button>
+                            <button class="btn btn-sm btn-primary" onclick="app.proceedToScenes()">Tiếp → Phân
+                                Cảnh</button>
+                        </div>
+                    </div>
+                    <div class="script-content" id="scriptOutput" contenteditable="true"></div>
+                </div>
+            </div>
+
+            <!-- ═══ PANEL 2: SCENE MANAGER ═══ -->
+            <div class="panel" id="panel-scenes">
+                <div class="panel-header">
+                    <h2>🎬 Phân Cảnh & Chọn Style</h2>
+                    <p>Chia kịch bản thành các phân cảnh và tạo prompt hình ảnh theo style bạn chọn</p>
+                </div>
+
+                <!-- Style Selector -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">🎨 Chọn Style Hình Ảnh</div>
+                        <span class="badge badge-accent" id="selectedStyleBadge">Chưa chọn</span>
+                    </div>
+
+                    <div class="tabs" style="margin-bottom: 1rem;">
+                        <button class="tab-btn active" onclick="app.switchBreakdownMode('auto')">🤖 Tự Động Phân
+                            Cảnh</button>
+                        <button class="tab-btn" onclick="app.switchBreakdownMode('manual')">🖐️ Thủ Công</button>
+                    </div>
+
+                    <div class="style-grid" id="styleGrid">
+                        <!-- Styles rendered by JS -->
+                    </div>
+
+                    <!-- Manual Breakdown Input -->
+                    <div id="manualBreakdownArea" style="display: none; margin-top: 1rem;">
+                        <div class="form-group">
+                            <label>Nhập mô tả phân cảnh (mỗi phân cảnh 1 dòng)</label>
+                            <textarea class="textarea-field" id="manualScenesInput" rows="5" placeholder="Cảnh 1: Một người đàn ông đang nhìn biểu đồ chứng khoán buồn bã
+Cảnh 2: Anh ta phát hiện ra một cơ hội đầu tư mới
+Cảnh 3: Biểu đồ bắt đầu đi lên và anh ta mỉm cười..."></textarea>
+                            <div class="upload-hint" style="margin-top:0.25rem;">AI sẽ dựa trên mô tả này để tạo prompt
+                                chi tiết theo style đã chọn.</div>
+                        </div>
+                    </div>
+
+                    <!-- Custom Style Input -->
+                    <div class="custom-style-input" id="customStyleInput">
+                        <div class="form-group">
+                            <label>Mô tả style tùy chỉnh</label>
+                            <textarea class="textarea-field" id="customStyleDesc" rows="2"
+                                placeholder="Ví dụ: Phong cách vẽ tranh sơn dầu cổ điển, màu sắc ấm áp, ánh sáng Rembrandt..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="btn-row" style="margin-top: 0.75rem; align-items: center;">
+                        <div class="form-group" style="margin-bottom: 0; min-width: 160px;">
+                            <label style="font-size: 0.75rem; margin-bottom: 0.25rem;">🖼️ Số shot/phân cảnh</label>
+                            <select class="select-field" id="shotsPerScene" style="padding: 0.5rem;">
+                                <option value="2" selected>2 shots (khuyến nghị)</option>
+                                <option value="3">3 shots (chi tiết)</option>
+                                <option value="4">4 shots (rất chi tiết)</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" id="breakdownBtn" onclick="app.breakdownScenes()">
+                            🎬 Chia Phân Cảnh & Tạo Prompt
+                        </button>
+                        <button class="btn btn-secondary" onclick="app.regeneratePrompts()">🔄 Tạo Lại Prompt</button>
+                    </div>
+                </div>
+
+                <!-- Scene List -->
+                <div class="scene-list" id="sceneList">
+                    <!-- Scenes rendered by JS -->
+                </div>
+
+                <div id="scenesFooter" style="display: none;">
+                    <div class="btn-row" style="justify-content: flex-end; margin-top: 1rem;">
+                        <button class="btn btn-secondary" onclick="app.copyAllPrompts()">📋 Copy Tất Cả Prompt</button>
+                        <button class="btn btn-primary" onclick="app.proceedToSEO()">Tiếp → SEO</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ PANEL 3: SEO OPTIMIZER ═══ -->
+            <div class="panel" id="panel-seo">
+                <div class="panel-header">
+                    <h2>🔍 SEO & Metadata</h2>
+                    <p>Tối ưu tiêu đề, mô tả, tags và hashtags cho video</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">⚡ Tạo SEO Metadata</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Keyword chính (đã lấy từ kịch bản)</label>
+                        <input type="text" class="input-field" id="seoKeyword"
+                            placeholder="Keyword sẽ được tự động điền từ chủ đề video">
+                    </div>
+                    <div class="btn-row">
+                        <button class="btn btn-primary" onclick="app.generateSEO()">✨ Tạo SEO</button>
+                        <button class="btn btn-secondary" onclick="app.generateTitlesOnly()">📝 Chỉ Tiêu Đề (10
+                            options)</button>
+                    </div>
+                </div>
+
+                <div id="seoResults" style="display: none;">
+                    <!-- Generated by JS: filename, titles, description, tags, hashtags -->
+                </div>
+
+                <div id="seoFooter" style="display: none;">
+                    <div class="btn-row" style="justify-content: flex-end; margin-top: 1rem;">
+                        <button class="btn btn-secondary" onclick="app.copySEOAll()">📋 Copy Tất Cả</button>
+                        <button class="btn btn-primary" onclick="app.proceedToThumbnail()">Tiếp → Thumbnail</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ PANEL 5: THUMBNAIL GENERATOR ═══ -->
+            <div class="panel" id="panel-thumbnail">
+                <div class="panel-header">
+                    <h2>🖼️ Tạo Thumbnail</h2>
+                    <p>Tạo prompt thumbnail viral cho video (chỉ áp dụng cho video dài)</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">🎨 Style Thumbnail</div>
+                    </div>
+                    <div class="style-grid" id="thumbnailStyleOptions"
+                        style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));">
+                        <!-- Rendered by JS -->
+                    </div>
+                    <div class="custom-style-input" id="thumbnailCustomInput">
+                        <div class="form-group">
+                            <label>Mô tả style thumbnail riêng</label>
+                            <textarea class="textarea-field" id="thumbnailCustomStyle" rows="2"
+                                placeholder="Ví dụ: Nền gradient đỏ-vàng, text trắng đậm, biểu cảm bất ngờ..."></textarea>
+                        </div>
+                    </div>
+                    <div class="btn-row" style="margin-top: 0.75rem;">
+                        <button class="btn btn-primary" id="thumbnailBtn" onclick="app.generateThumbnails()">
+                            🖼️ Tạo 3 Phương Án Thumbnail
+                        </button>
+                    </div>
+                </div>
+
+                <div id="thumbnailResults" style="display: none;"></div>
+
+                <div id="thumbnailFooter" style="display: none;">
+                    <div class="btn-row" style="justify-content: flex-end; margin-top: 1rem;">
+                        <button class="btn btn-secondary" onclick="app.copyAllThumbnailPrompts()">📋 Copy Tất
+                            Cả</button>
+                        <button class="btn btn-primary" onclick="app.proceedToWatermark()">Tiếp → Xóa Watermark</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ PANEL 6: WATERMARK REMOVER ═══ -->
+            <div class="panel" id="panel-watermark">
+                <div class="panel-header">
+                    <h2>🧹 Xóa Watermark</h2>
+                    <p>Upload hình ảnh từ Banana Pro, tự động xóa watermark logo</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">⚙️ Cài Đặt Watermark</div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
+                        <div class="form-group">
+                            <label>Vị trí watermark</label>
+                            <select class="select-field" id="wmPosition">
+                                <option value="bottom-right">Dưới phải ↘</option>
+                                <option value="bottom-left">Dưới trái ↙</option>
+                                <option value="top-right">Trên phải ↗</option>
+                                <option value="top-left">Trên trái ↖</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Phương pháp xóa</label>
+                            <select class="select-field" id="wmMethod">
+                                <option value="crop">Crop (cắt bỏ)</option>
+                                <option value="blur">Blur (làm mờ)</option>
+                                <option value="fill">Fill (lấp đầy)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Kích thước vùng xóa (%)</label>
+                            <input type="number" class="input-field" id="wmSize" value="12" min="5" max="30">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upload Zone -->
+                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">📂</div>
+                    <div class="upload-text">Kéo thả hình ảnh hoặc click để chọn file</div>
+                    <div class="upload-hint">Hỗ trợ: PNG, JPG, WebP — Tối đa 20 hình</div>
+                    <input type="file" id="fileInput" multiple accept="image/*" style="display:none"
+                        onchange="app.handleWatermarkFiles(this.files)">
+                </div>
+
+                <!-- Image Grid (processed) -->
+                <div class="image-grid" id="wmImageGrid"></div>
+
+                <div id="wmFooter" style="display: none;">
+                    <div class="btn-row" style="justify-content: flex-end; margin-top: 1rem;">
+                        <button class="btn btn-primary" onclick="app.downloadAllProcessed()">📥 Tải Tất Cả
+                            (ZIP)</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ PANEL: PROJECT MANAGER ═══ -->
+            <div class="panel" id="panel-projects">
+                <div class="panel-header">
+                    <h2>📁 Quản Lý Dự Án</h2>
+                    <p>Lưu, tải và quản lý các dự án video</p>
+                </div>
+
+                <div class="btn-row" style="margin-bottom: 1rem;">
+                    <button class="btn btn-primary" onclick="app.newProject()">➕ Dự Án Mới</button>
+                    <button class="btn btn-secondary" onclick="app.importProject()">📥 Import JSON</button>
+                    <input type="file" id="importInput" accept=".json" style="display:none"
+                        onchange="app.handleImportFile(this.files[0])">
+                </div>
+
+                <div id="projectList">
+                    <!-- Rendered by JS -->
+                </div>
+            </div>
+
+            <!-- ═══ PANEL: SETTINGS ═══ -->
+            <div class="panel" id="panel-settings">
+                <div class="panel-header">
+                    <h2>⚙️ Cài Đặt</h2>
+                    <p>Cấu hình API keys và tùy chọn</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">🔑 API Keys</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Gemini API Key</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="password" class="input-field" id="settingsGeminiKey" placeholder="AIzaSy...">
+                            <button class="btn btn-sm btn-secondary"
+                                onclick="app.toggleKeyVisibility('settingsGeminiKey')">👁</button>
+                            <button class="btn btn-sm btn-primary" onclick="app.saveGeminiKey()">Lưu</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>YouTube API Key</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="password" class="input-field" id="settingsYoutubeKey" placeholder="AIzaSy...">
+                            <button class="btn btn-sm btn-secondary"
+                                onclick="app.toggleKeyVisibility('settingsYoutubeKey')">👁</button>
+                            <button class="btn btn-sm btn-primary" onclick="app.saveYoutubeKey()">Lưu</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">📺 Cấu Hình Kênh</div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <h4 style="font-size: 0.85rem; margin-bottom: 0.5rem; color: #f0b429;">💰 Đầu tư & Tài chính
+                            </h4>
+                            <div class="form-group">
+                                <label>Style mặc định</label>
+                                <select class="select-field" id="financeDefaultStyle">
+                                    <option value="stick-crumpled">✏️ Stick Figure (Giấy Nhàu)</option>
+                                    <option value="paper-cutout">✂️ Cắt Giấy Thủ Công</option>
+                                    <option value="custom">🎨 Custom</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 style="font-size: 0.85rem; margin-bottom: 0.5rem; color: #22d3ee;">🧠 Giải mã Tâm lý
+                            </h4>
+                            <div class="form-group">
+                                <label>Style mặc định</label>
+                                <select class="select-field" id="psychDefaultStyle">
+                                    <option value="neon-stick">💡 Neon Stick Figure</option>
+                                    <option value="anime">🎌 Anime</option>
+                                    <option value="custom">🎨 Custom</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Scripts -->
+    <script src="modules/gemini-api.js"></script>
+    <script src="modules/keyword-research.js"></script>
+    <script src="modules/script-writer.js"></script>
+    <script src="modules/scene-manager.js"></script>
+    <script src="modules/seo-optimizer.js"></script>
+    <script src="modules/thumbnail-generator.js"></script>
+    <script src="modules/watermark-remover.js"></script>
+    <script src="modules/project-manager.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
