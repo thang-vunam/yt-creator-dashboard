@@ -24,8 +24,8 @@ const app = {
 
         // Render YouTube API key in settings
         const ytKeyEl = document.getElementById('settingsYoutubeKey');
-        if (ytKeyEl && KeywordResearch.getApiKey()) {
-            ytKeyEl.value = KeywordResearch.getApiKey();
+        if (ytKeyEl && window.AnalysisEngine?.getApiKey()) {
+            ytKeyEl.value = AnalysisEngine.getApiKey();
         }
 
         // Try to restore previous session (F5-proof)
@@ -116,8 +116,9 @@ const app = {
         results.innerHTML = '<div class="skeleton" style="height: 100px; margin-bottom: 0.75rem;"></div>'.repeat(3);
 
         try {
-            await KeywordResearch.research(keyword, this.currentChannel);
-            KeywordResearch.renderResults('researchResults');
+            if (!window.AnalysisEngine) throw new Error('Module AnalysisEngine chưa được tải. Thử tắt AdBlock và F5.');
+            await AnalysisEngine.research(keyword, this.currentChannel);
+            AnalysisEngine.renderResults('researchResults');
             this._markStepCompleted('research');
 
             // Show footer
@@ -164,7 +165,7 @@ const app = {
 
         try {
             // Get secondary keywords from research (if available)
-            const secondaryKeywords = KeywordResearch?.results?.secondaryKeywords || [];
+            const secondaryKeywords = window.AnalysisEngine?.results?.secondaryKeywords || [];
 
             await ScriptWriter.generate(topic, {
                 style: document.getElementById('scriptStyle')?.value || 'storytelling',
@@ -557,7 +558,7 @@ const app = {
         SceneManager.renderStyleGrid();
         SEOOptimizer.results = null;
         if (typeof ThumbnailGenerator !== 'undefined') ThumbnailGenerator.results = null;
-        if (typeof KeywordResearch !== 'undefined') KeywordResearch.results = null;
+        if (typeof AnalysisEngine !== 'undefined') AnalysisEngine.results = null;
 
         // Reset nav step indicators
         document.querySelectorAll('.nav-item.completed').forEach(el => el.classList.remove('completed'));
@@ -580,7 +581,7 @@ const app = {
                 videoType: document.getElementById('videoType')?.value || '',
                 seoKeyword: document.getElementById('seoKeyword')?.value || '',
                 // Module data
-                researchResults: KeywordResearch?.results || null,
+                researchResults: window.AnalysisEngine?.results || null,
                 script: ScriptWriter.currentScript || '',
                 scenes: SceneManager.scenes || [],
                 sceneStyle: SceneManager.selectedStyle || null,
@@ -631,9 +632,9 @@ const app = {
             setVal('seoKeyword', s.seoKeyword);
 
             // Restore keyword research
-            if (s.researchResults && KeywordResearch) {
-                KeywordResearch.results = s.researchResults;
-                KeywordResearch.renderResults?.('researchResults');
+            if (s.researchResults && window.AnalysisEngine) {
+                AnalysisEngine.results = s.researchResults;
+                AnalysisEngine.renderResults?.('researchResults');
                 const resPanel = document.getElementById('researchResults');
                 if (resPanel) resPanel.style.display = 'block';
                 const resFooter = document.getElementById('researchFooter');
