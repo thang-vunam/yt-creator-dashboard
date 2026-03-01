@@ -1,214 +1,362 @@
 /**
  * YouTube Creator Dashboard — Search Analysis Module
- * Handles keyword suggestions and competition analysis.
- * (Renamed from keyword-research to avoid ad-blocker false positives)
  */
 window.AnalysisEngine = {
-
     YT_API_BASE: 'https://www.googleapis.com/youtube/v3',
     STORAGE_KEY: 'ytcd_youtube_api_key',
-    // ⬇️ ĐÃ DÁN YOUTUBE API KEY CỦA BẠN VÀO ĐÂY (GIỮ KÍN NẾU SỬ DỤNG CÔNG KHAI)
-    DEFAULT_KEY: 'AIzaSyC2OT4SR8wYs6p02xxjcb1SkDTKIB663yc',
     results: null,
 
     init() {
-        if (!this.getApiKey() && this.DEFAULT_KEY) {
-            localStorage.setItem(this.STORAGE_KEY, this.DEFAULT_KEY);
-        }
+        // YouTube API Key được nhập qua UI Settings
+        console.log('🔑 YouTube API:', this.getApiKey() ? 'Key đã sẵn sàng' : 'Chưa có key - vào Settings để nhập');
     },
 
     getApiKey() { return localStorage.getItem(this.STORAGE_KEY); },
 
-    // ═══ Keyword Suggestions (Gemini-powered) ═══
-    async getAutocompleteSuggestions(query) {
-        try {
-            const prompt = `Bạn là chuyên gia YouTube SEO. Gợi ý 15 từ khóa tìm kiếm YouTube liên quan đến "${query}".
-
-QUY TẮC:
-- Từ khóa phải là cụm từ mà người xem THỰC SỰ gõ trên YouTube
-- Bao gồm: long-tail keywords, câu hỏi, từ khóa trend
-- Ưu tiên tiếng Việt
-- Sắp xếp theo volume ước lượng (cao → thấp)
-
-CHỈ TRẢ VỀ danh sách, mỗi dòng 1 keyword, KHÔNG đánh số, KHÔNG giải thích.`;
-
-            const result = await GeminiAPI.generateContent(prompt, '', { temperature: 0.8, maxOutputTokens: 500 });
-            return result.trim().split('\n')
-                .map(s => s.replace(/^[\d\.\-\*\s]+/, '').trim())
-                .filter(s => s.length > 0)
-                .slice(0, 15);
-        } catch (e) {
-            console.warn('Keyword suggestions error:', e);
-            return [];
-        }
-    },
-
-    // ═══ YouTube Search for competition analysis ═══
-    async searchYouTube(query, maxResults = 10) {
+    async research(keyword) {
         const apiKey = this.getApiKey();
-        if (!apiKey) return [];
 
+        // 1. Gợi ý từ khóa
+        let suggestions = [];
         try {
-            const url = `${this.YT_API_BASE}/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=${maxResults}&order=relevance&key=${apiKey}`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`YouTube API ${response.status}`);
-            const data = await response.json();
-            return data.items || [];
-        } catch (e) {
-            console.warn('YouTube search error:', e);
-            return [];
-        }
-    },
+            const prompt = `Gợi ý 15 từ khóa YouTube liên quan đến "${keyword}". Chỉ trả về danh sách, mỗi dòng 1 từ khóa tiếng Việt.`;
+            const res = await GeminiAPI.generateContent(prompt);
+            suggestions = res.trim().split('\n').map(s => s.replace(/^[\d\.\-\*\s]+/, '').trim()).filter(Boolean);
+        } catch (e) { console.warn("Gemini Error:", e); }
 
-    // ═══ Get video stats for competition analysis ═══
-    async getVideoStats(videoIds) {
-        const apiKey = this.getApiKey();
-        if (!apiKey || videoIds.length === 0) return [];
-
+        // 2. Tìm kiếm đối thủ
+        let videos = [];
         try {
-            const url = `${this.YT_API_BASE}/videos?part=statistics,snippet&id=${videoIds.join(',')}&key=${apiKey}`;
+            const url = `${this.YT_API_BASE}/search?part=snippet&q=${encodeURIComponent(keyword)}&type=video&maxResults=5&key=${apiKey}`;
             const response = await fetch(url);
-            if (!response.ok) throw new Error(`YouTube API ${response.status}`);
             const data = await response.json();
-            return data.items || [];
-        } catch (e) {
-            console.warn('Video stats error:', e);
-            return [];
-        }
-    },
+            videos = (data.items || []).map(v => ({ title: v.snippet.title, views: 0 })); // Đơn giản hóa
+        } catch (e) { console.warn("YouTube Error:", e); }
 
-    // ═══ Full Research Pipeline ═══
-    async research(seedKeyword, channel = 'finance') {
-        const channelContext = channel === 'finance'
-            ? 'đầu tư, tài chính, chứng khoán, tiền bạc Việt Nam'
-            : 'tâm lý học, tâm lý, phát triển bản thân Việt Nam';
-
-        // 1. Get autocomplete suggestions
-        const suggestions = await this.getAutocompleteSuggestions(seedKeyword);
-
-        // 2. Search YouTube for competition
-        const searchResults = await this.searchYouTube(seedKeyword, 10);
-        const videoIds = searchResults.map(r => r.id?.videoId).filter(Boolean);
-        const videoStats = videoIds.length > 0 ? await this.getVideoStats(videoIds) : [];
-
-        // 3. AI Analysis via Gemini
-        const analysisPrompt = `Phân tích keyword "${seedKeyword}" cho kênh YouTube về ${channelContext}.
-
-Dữ liệu YouTube Autocomplete: ${suggestions.slice(0, 15).join(', ')}
-
-Top 10 video cạnh tranh:
-${videoStats.slice(0, 10).map((v, i) => `${i + 1}. "${v.snippet?.title}" — ${Number(v.statistics?.viewCount || 0).toLocaleString()} views, ${Number(v.statistics?.likeCount || 0).toLocaleString()} likes`).join('\n')}
-
-PHÂN TÍCH:
-1. **Đánh giá keyword chính**: Volume ước lượng (cao/trung bình/thấp), độ cạnh tranh, phù hợp kênh?
-2. **5-8 keyword phụ gợi ý**: Dựa trên autocomplete + gaps
-3. **3-5 góc tiếp cận nội dung**: Unique angles chưa ai làm
-4. **Đề xuất tiêu đề video**: 3 tiêu đề viral cho keyword này
-5. **Phân tích đối thủ**: Top 3 video view cao nhất — điểm mạnh/yếu
-6. **Kết luận**: NÊN hay KHÔNG NÊN làm video này, lý do
-
-Trả lời bằng tiếng Việt, format markdown rõ ràng.
-
-QUAN TRỌNG: Cuối cùng, ở DÒNG CUỐI, liệt kê chính xác các keyword phụ đã gợi ý theo format:
-SECONDARY_KEYWORDS: keyword1, keyword2, keyword3, keyword4, keyword5`;
-
-        const analysis = await GeminiAPI.generateContent(analysisPrompt, '', { temperature: 0.7 });
-
-        // Extract secondary keywords from the analysis
-        let secondaryKeywords = [];
-        const kwMatch = analysis.match(/SECONDARY_KEYWORDS:\s*(.+)/i);
-        if (kwMatch) {
-            secondaryKeywords = kwMatch[1].split(',').map(k => k.trim()).filter(k => k.length > 0);
-        }
-        // Fallback: use autocomplete suggestions as secondary keywords
-        if (secondaryKeywords.length === 0 && suggestions.length > 0) {
-            secondaryKeywords = suggestions.slice(0, 8);
-        }
-
-        // Clean analysis text (remove the SECONDARY_KEYWORDS line from display)
-        const cleanAnalysis = analysis.replace(/\n?SECONDARY_KEYWORDS:.+$/i, '').trim();
+        // 3. Phân tích AI
+        const analysisPrompt = `Phân tích từ khóa "${keyword}". Danh sách video cạnh tranh: ${videos.map(v => v.title).join(', ')}. Đề xuất 3 tiêu đề viral và chiến lược SEO. Trả về tiếng Việt. Kết thúc bằng SECONDARY_KEYWORDS: k1, k2...`;
+        const analysis = await GeminiAPI.generateContent(analysisPrompt);
 
         this.results = {
-            keyword: seedKeyword,
-            secondaryKeywords,
+            keyword,
             suggestions,
-            searchResults: videoStats.slice(0, 10).map(v => ({
-                title: v.snippet?.title,
-                views: Number(v.statistics?.viewCount || 0),
-                likes: Number(v.statistics?.likeCount || 0),
-                comments: Number(v.statistics?.commentCount || 0),
-                channel: v.snippet?.channelTitle,
-                publishedAt: v.snippet?.publishedAt
-            })),
-            analysis: cleanAnalysis
+            searchResults: videos,
+            analysis: analysis.replace(/\n?SECONDARY_KEYWORDS:.+$/i, '').trim(),
+            secondaryKeywords: suggestions.slice(0, 5)
         };
-
         return this.results;
     },
 
-    // ═══ Render ═══
     renderResults(containerId) {
         const container = document.getElementById(containerId);
         if (!container || !this.results) return;
-
         const r = this.results;
         container.style.display = 'block';
-
-        // Autocomplete suggestions
-        const suggestionsHtml = r.suggestions.length > 0
-            ? r.suggestions.slice(0, 15).map(s =>
-                `<span class="badge badge-info" style="cursor:pointer;margin:0.15rem;" onclick="document.getElementById('researchKeyword').value='${s.replace(/'/g, "\\'")}'">🔍 ${s}</span>`
-            ).join(' ')
-            : '<span style="color:var(--text-muted);">Không có gợi ý</span>';
-
-        // Competition table
-        const compHtml = r.searchResults.length > 0
-            ? `<table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
-                <thead><tr>
-                    <th style="text-align:left;padding:0.4rem;border-bottom:1px solid var(--border);color:var(--text-secondary);">#</th>
-                    <th style="text-align:left;padding:0.4rem;border-bottom:1px solid var(--border);color:var(--text-secondary);">Video</th>
-                    <th style="text-align:right;padding:0.4rem;border-bottom:1px solid var(--border);color:var(--text-secondary);">Views</th>
-                    <th style="text-align:right;padding:0.4rem;border-bottom:1px solid var(--border);color:var(--text-secondary);">Likes</th>
-                </tr></thead>
-                <tbody>${r.searchResults.map((v, i) => `
-                    <tr>
-                        <td style="padding:0.4rem;border-bottom:1px solid var(--border);">${i + 1}</td>
-                        <td style="padding:0.4rem;border-bottom:1px solid var(--border);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${v.title}</td>
-                        <td style="padding:0.4rem;border-bottom:1px solid var(--border);text-align:right;color:var(--success);">${v.views.toLocaleString()}</td>
-                        <td style="padding:0.4rem;border-bottom:1px solid var(--border);text-align:right;">${v.likes.toLocaleString()}</td>
-                    </tr>
-                `).join('')}</tbody></table>`
-            : '<span style="color:var(--text-muted);">Không có dữ liệu</span>';
-
         container.innerHTML = `
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">🔤 Gợi Ý Từ Khóa (Autocomplete)</div>
-                </div>
-                <div style="display:flex;flex-wrap:wrap;gap:0.25rem;">${suggestionsHtml}</div>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">📊 Phân Tích Đối Thủ (Top 10)</div>
-                </div>
-                ${compHtml}
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">🤖 Phân Tích AI</div>
-                    <button class="copy-btn" onclick="app.copySEO('researchAnalysis')">📋 Copy</button>
-                </div>
-                <div id="researchAnalysis" style="font-size:0.85rem;line-height:1.7;">
-                    ${GeminiAPI.formatMarkdown(r.analysis)}
-                </div>
-            </div>
+            <div class="card"><div class="card-header"><div class="card-title">🔍 Gợi ý</div></div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;">${r.suggestions.map(s => `<span class="badge badge-info">${s}</span>`).join('')}</div></div>
+            <div class="card"><div class="card-header"><div class="card-title">🤖 Phân tích AI</div></div>
+            <div style="line-height:1.6">${GeminiAPI.formatMarkdown(r.analysis)}</div></div>
         `;
     },
 
-    toJSON() { return { results: this.results }; },
-    fromJSON(data) { if (data?.results) this.results = data.results; }
+    // ═══════════════════════════════════════════
+    // TRENDING KEYWORDS DISCOVERY
+    // ═══════════════════════════════════════════
+
+    trendingResults: null,
+
+    NICHE_CONTEXT: {
+        finance: {
+            name: 'Đầu tư & Tài chính',
+            icon: '💰',
+            topics: 'đầu tư chứng khoán, tài chính cá nhân, crypto, bất động sản, quản lý tiền, kinh tế vĩ mô, startup, passive income, ETF, cổ phiếu, forex, tiết kiệm, lãi suất, ngân hàng, fintech',
+            isDefault: true
+        },
+        psychology: {
+            name: 'Giải mã Tâm lý',
+            icon: '🧠',
+            topics: 'tâm lý học, phát triển bản thân, mối quan hệ, stress, EQ, ngôn ngữ cơ thể, tâm lý đám đông, manipulation, thao túng tâm lý, self-help, mindset, thói quen, NLP, tâm lý tội phạm, dark psychology',
+            isDefault: true
+        }
+    },
+
+    // Load custom channels from localStorage and merge with defaults
+    _initChannels() {
+        try {
+            const saved = localStorage.getItem('yt_custom_channels');
+            if (saved) {
+                const custom = JSON.parse(saved);
+                Object.assign(this.NICHE_CONTEXT, custom);
+            }
+        } catch (e) { console.warn('Failed to load custom channels:', e); }
+    },
+
+    _saveCustomChannels() {
+        const custom = {};
+        for (const [key, val] of Object.entries(this.NICHE_CONTEXT)) {
+            if (!val.isDefault) custom[key] = val;
+        }
+        localStorage.setItem('yt_custom_channels', JSON.stringify(custom));
+    },
+
+    addChannel(id, name, icon, topics) {
+        if (!id || !name || !topics) throw new Error('Cần có ID, tên và chủ đề cho kênh.');
+        if (this.NICHE_CONTEXT[id]) throw new Error(`Kênh "${id}" đã tồn tại.`);
+        this.NICHE_CONTEXT[id] = { name, icon: icon || '📺', topics, isDefault: false };
+        this._saveCustomChannels();
+        return this.NICHE_CONTEXT[id];
+    },
+
+    removeChannel(id) {
+        if (!this.NICHE_CONTEXT[id]) return;
+        if (this.NICHE_CONTEXT[id].isDefault) throw new Error('Không thể xóa kênh mặc định.');
+        delete this.NICHE_CONTEXT[id];
+        this._saveCustomChannels();
+    },
+
+    updateChannel(id, data) {
+        if (!this.NICHE_CONTEXT[id]) return;
+        Object.assign(this.NICHE_CONTEXT[id], data);
+        this._saveCustomChannels();
+    },
+
+    getChannels() {
+        return { ...this.NICHE_CONTEXT };
+    },
+
+    async discoverTrending(channel) {
+        const niche = this.NICHE_CONTEXT[channel] || this.NICHE_CONTEXT.finance;
+
+        // ══════════════════════════════════════
+        // STEP 1: Fetch real YouTube data
+        // ══════════════════════════════════════
+        let ytData = '';
+        try {
+            const ytVideos = await this._fetchYouTubeTrending(niche);
+            if (ytVideos.length > 0) {
+                ytData = `\n\nDỮ LIỆU THỰC TẾ TỪ YOUTUBE (${new Date().toLocaleDateString('vi-VN')}):\n`;
+                ytData += ytVideos.map((v, i) =>
+                    `${i + 1}. "${v.title}" — ${v.views} views, ${v.publishedAt}`
+                ).join('\n');
+                console.log(`📊 YouTube data: ${ytVideos.length} videos fetched`);
+            }
+        } catch (e) {
+            console.warn('⚠️ YouTube trending fetch failed:', e.message);
+        }
+
+        // ══════════════════════════════════════
+        // STEP 2: Gemini + Google Search Grounding
+        // ══════════════════════════════════════
+        const today = new Date().toLocaleDateString('vi-VN', { day: 'numeric', month: 'long', year: 'numeric' });
+
+        const prompt = `Ngày hôm nay là ${today}.
+
+Bạn là chuyên gia phân tích xu hướng YouTube tại Việt Nam.
+
+Kênh: ${niche.name}
+Các chủ đề liên quan: ${niche.topics}
+${ytData}
+
+Nhiệm vụ: Dựa trên DỮ LIỆU THỰC TẾ ở trên VÀ kết quả tìm kiếm Google, hãy tìm 10 từ khóa/chủ đề đang TRENDING hoặc có tiềm năng cao trên YouTube Việt Nam NGAY BÂY GIỜ (${today}) cho niche "${niche.name}".
+
+QUAN TRỌNG:
+- CHỈ đề xuất chủ đề dựa trên SỰ KIỆN THỰC TẾ đang xảy ra, KHÔNG bịa đặt
+- Dữ liệu phải phản ánh đúng thời điểm ${today}
+- Nếu không chắc chắn về một sự kiện, KHÔNG đưa vào danh sách
+- Ưu tiên tin tức và sự kiện có thể xác minh được
+
+Trả về CHÍNH XÁC theo format JSON sau, KHÔNG có text nào khác:
+[
+  {
+    "keyword": "từ khóa/chủ đề cụ thể (chính xác, dựa trên dữ liệu thực)",
+    "viralScore": 4,
+    "reason": "lý do CỤ THỂ tại sao trending (dẫn chứng thực tế)",
+    "videoAngle": "gợi ý góc tiếp cận video cụ thể",
+    "competition": "thấp",
+    "category": "trending | evergreen | gap | news"
+  }
+]
+
+Quy tắc:
+- viralScore: 1-5 (5 = viral nhất)
+- competition: "thấp" | "trung bình" | "cao"
+- category: "trending" (đang hot), "evergreen" (luôn được tìm), "gap" (ít người làm), "news" (tin mới)
+- Keyword phải cụ thể, có thể dùng làm tiêu đề video ngay
+- Ưu tiên keyword tiếng Việt`;
+
+        let response;
+        let usedGrounding = false;
+
+        try {
+            // Try with Google Search Grounding first
+            response = await GeminiAPI.generateWithGrounding(prompt, '', {
+                purpose: 'quality',
+                temperature: 0.7,
+                maxOutputTokens: 4096
+            });
+            usedGrounding = true;
+            console.log('🌐 Used Google Search Grounding');
+        } catch (e) {
+            console.warn('⚠️ Grounding failed, falling back to standard:', e.message);
+            // Fallback to standard generateContent
+            const text = await GeminiAPI.generateContent(prompt, '', {
+                purpose: 'quality',
+                temperature: 0.7,
+                maxOutputTokens: 4096
+            });
+            response = { text, groundingMetadata: null };
+        }
+
+        // ══════════════════════════════════════
+        // STEP 3: Parse JSON
+        // ══════════════════════════════════════
+        const rawText = response.text;
+        let keywords = [];
+        try {
+            const jsonMatch = rawText.match(/\[[\s\S]*\]/);
+            if (jsonMatch) {
+                keywords = JSON.parse(jsonMatch[0]);
+            }
+        } catch (e) {
+            console.warn('⚠️ JSON parse error:', e.message);
+            keywords = [];
+        }
+
+        if (keywords.length === 0) {
+            throw new Error('Không thể phân tích kết quả. Vui lòng thử lại.');
+        }
+
+        keywords.sort((a, b) => (b.viralScore || 0) - (a.viralScore || 0));
+
+        this.trendingResults = {
+            channel,
+            niche: niche.name,
+            keywords,
+            timestamp: Date.now(),
+            sources: {
+                youtube: ytData ? true : false,
+                googleGrounding: usedGrounding,
+                searchQueries: response.groundingMetadata?.webSearchQueries || []
+            }
+        };
+
+        return this.trendingResults;
+    },
+
+    /**
+     * Fetch real YouTube trending/popular videos for a niche
+     */
+    async _fetchYouTubeTrending(niche) {
+        const apiKey = this.getApiKey();
+        if (!apiKey) return [];
+
+        const videos = [];
+
+        try {
+            // 1. Get trending videos in Vietnam
+            const trendingUrl = `${this.YT_API_BASE}/videos?part=snippet,statistics&chart=mostPopular&regionCode=VN&maxResults=10&key=${apiKey}`;
+            const trendingRes = await fetch(trendingUrl);
+            if (trendingRes.ok) {
+                const data = await trendingRes.json();
+                (data.items || []).forEach(v => {
+                    videos.push({
+                        title: v.snippet.title,
+                        views: this._formatViews(v.statistics?.viewCount),
+                        publishedAt: new Date(v.snippet.publishedAt).toLocaleDateString('vi-VN'),
+                        source: 'trending'
+                    });
+                });
+            }
+        } catch (e) { console.warn('Trending fetch error:', e.message); }
+
+        try {
+            // 2. Search for recent popular videos in niche
+            const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+            const nicheKeywords = niche.topics.split(',').slice(0, 3).map(t => t.trim()).join('|');
+            const searchUrl = `${this.YT_API_BASE}/search?part=snippet&q=${encodeURIComponent(nicheKeywords)}&type=video&order=viewCount&publishedAfter=${weekAgo}&regionCode=VN&maxResults=10&key=${apiKey}`;
+            const searchRes = await fetch(searchUrl);
+            if (searchRes.ok) {
+                const data = await searchRes.json();
+                (data.items || []).forEach(v => {
+                    videos.push({
+                        title: v.snippet.title,
+                        views: 'N/A',
+                        publishedAt: new Date(v.snippet.publishedAt).toLocaleDateString('vi-VN'),
+                        source: 'niche-search'
+                    });
+                });
+            }
+        } catch (e) { console.warn('Niche search error:', e.message); }
+
+        return videos;
+    },
+
+    _formatViews(count) {
+        if (!count) return 'N/A';
+        const n = parseInt(count);
+        if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+        if (n >= 1000) return `${(n / 1000).toFixed(0)}K`;
+        return count;
+    },
+
+    renderTrendingResults(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container || !this.trendingResults) return;
+
+        const { keywords, niche, sources } = this.trendingResults;
+
+        const categoryIcons = {
+            trending: '🔥', evergreen: '🌲', gap: '💎', news: '📰'
+        };
+        const categoryLabels = {
+            trending: 'Đang Hot', evergreen: 'Evergreen', gap: 'Cơ hội', news: 'Tin mới'
+        };
+
+        // Source badges
+        const sourceBadges = [];
+        if (sources?.youtube) sourceBadges.push('<span class="badge badge-info" style="font-size:0.7rem;">📊 YouTube Data</span>');
+        if (sources?.googleGrounding) sourceBadges.push('<span class="badge badge-info" style="font-size:0.7rem;">🌐 Google Search</span>');
+        const sourceHTML = sourceBadges.length > 0
+            ? `<div style="margin-bottom:0.75rem;display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                <span style="font-size:0.75rem;color:var(--text-muted);">Nguồn dữ liệu:</span>
+                ${sourceBadges.join('')}
+                <span style="font-size:0.7rem;color:var(--text-muted);">— ${new Date().toLocaleString('vi-VN')}</span>
+               </div>`
+            : '';
+
+        const cardsHTML = keywords.map((kw, i) => {
+            const fires = '🔥'.repeat(Math.min(kw.viralScore || 1, 5));
+            const catIcon = categoryIcons[kw.category] || '🔥';
+            const catLabel = categoryLabels[kw.category] || 'Trending';
+            const compClass = kw.competition === 'thấp' ? 'comp-low' : kw.competition === 'cao' ? 'comp-high' : 'comp-mid';
+
+            return `
+                <div class="trending-card" style="animation-delay: ${i * 0.06}s">
+                    <div class="trending-card-header">
+                        <span class="trending-rank">#${i + 1}</span>
+                        <span class="trending-category badge badge-${kw.category || 'trending'}">${catIcon} ${catLabel}</span>
+                    </div>
+                    <div class="trending-keyword">${kw.keyword}</div>
+                    <div class="trending-viral">${fires} <span class="viral-score">${kw.viralScore}/5</span></div>
+                    <div class="trending-reason">💡 ${kw.reason}</div>
+                    <div class="trending-angle">🎬 ${kw.videoAngle}</div>
+                    <div class="trending-footer">
+                        <span class="trending-comp ${compClass}">Cạnh tranh: ${kw.competition}</span>
+                        <button class="btn btn-sm btn-primary" onclick="app.useTrendingKeyword('${kw.keyword.replace(/'/g, "\\'")}')">
+                            ✨ Dùng keyword này
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.style.display = 'block';
+        container.innerHTML = `
+            ${sourceHTML}
+            <div class="trending-grid">${cardsHTML}</div>
+        `;
+    }
 };
 
 AnalysisEngine.init();

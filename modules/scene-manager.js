@@ -140,7 +140,7 @@ window.SceneManager = {
     // SCENE BREAKDOWN
     // ═══════════════════════════════════════════
 
-    async breakdownScript(scriptText, shotsPerScene = 2, videoType = 'long') {
+    async breakdownScript(scriptText, maxShotsPerScene = 3, videoType = 'long') {
         if (!scriptText || scriptText.trim().length < 50) {
             throw new Error('Kịch bản quá ngắn để chia phân cảnh.');
         }
@@ -151,7 +151,7 @@ window.SceneManager = {
         // Clean script text - remove HTML tags if any
         const cleanScript = scriptText.replace(/<[^>]*>/g, '').trim();
         const isShort = videoType === 'short';
-        console.log('🎬 Scene breakdown —', isShort ? 'SHORTS' : 'LONG', '— Script length:', cleanScript.length, 'chars,', shotsPerScene, 'shots/scene');
+        console.log('🎬 Scene breakdown —', isShort ? 'SHORTS' : 'LONG', '— Script length:', cleanScript.length, 'chars, max', maxShotsPerScene, 'shots/scene');
 
         const stylePrompt = this.getStylePrompt();
 
@@ -159,7 +159,6 @@ window.SceneManager = {
         const wordCount = cleanScript.split(/\s+/).length;
         let minScenes, maxScenes;
         if (isShort) {
-            // Shorts: 4-5 scenes for ~60s video
             minScenes = 4;
             maxScenes = 5;
         } else {
@@ -173,33 +172,70 @@ window.SceneManager = {
             ? '9:16 vertical portrait orientation (1080x1920). CRITICAL: ALL images must be VERTICAL 9:16 ratio for YouTube Shorts.'
             : '16:9 landscape orientation (1920x1080).';
 
-        // Build shot descriptions for prompt
-        const shotExamples = Array.from({ length: shotsPerScene }, (_, i) =>
-            `"Shot ${i + 1}: Detailed description of shot ${i + 1} for this scene. ${aspectRatio} ${stylePrompt.suffix}"`
-        ).join(',');
+        const systemInstruction = `You are a YouTube video scene breakdown expert AND a master image prompt engineer. Output ONLY a valid JSON array.
 
-        const systemInstruction = `You are a YouTube video scene breakdown expert. Output ONLY a valid JSON array.
-
-TASK: Break the Vietnamese YouTube script into ${minScenes}-${maxScenes} scenes. Each scene must have EXACTLY ${shotsPerScene} different image prompts (shots) showing different visual angles/moments.
+TASK: Break the Vietnamese YouTube script into ${minScenes}-${maxScenes} scenes.
 
 VIDEO FORMAT: ${isShort ? 'YouTube SHORTS (vertical 9:16, < 60 seconds)' : 'Long-form YouTube video (horizontal 16:9, 5-15 minutes)'}
 ASPECT RATIO: ${aspectRatio}
 IMAGE STYLE: ${stylePrompt.prefix}
 
+DYNAMIC SHOTS PER SCENE (CRITICAL):
+Each scene should have a VARIABLE number of image prompts (shots) based on the voiceover LENGTH of that scene:
+- Very short voiceover (< 50 words, ~20 seconds): 1 shot only
+- Medium voiceover (50-150 words, 20-60 seconds): 2 shots  
+- Long voiceover (150-250 words, 60-120 seconds): 3 shots
+- Very long voiceover (250+ words, 2+ minutes): ${maxShotsPerScene} shots (max ${maxShotsPerScene})
+Each shot must show a DIFFERENT visual angle, moment, or perspective within the same scene.
+The number of shots should feel PROPORTIONAL to the content — do NOT give 3 shots to a 1-sentence scene.
+
+═══ IMAGE PROMPT ENGINEERING GUIDE ═══
+Each image prompt MUST include ALL of these elements (40+ words each):
+
+1. SUBJECT & ACTION: What is happening? Who/what is in the scene? Be specific.
+2. CAMERA ANGLE: Choose one per shot (vary between shots in same scene):
+   - Close-up / Extreme close-up (for emotion, detail)
+   - Medium shot (waist-up, for dialogue/interaction)
+   - Wide shot / Establishing shot (for context, environment)
+   - Bird's eye view / Top-down (for overview, maps, data)
+   - Low angle (for power, authority)
+   - Over-the-shoulder (for perspective, POV)
+   - Dutch angle / Tilted (for tension, unease)
+3. LIGHTING: Choose appropriate mood lighting:
+   - Soft diffused light (calm, informative)
+   - Dramatic side lighting / Rim light (tension, reveal)
+   - Golden hour warm light (hope, nostalgia)
+   - Cool blue/teal tones (technology, sadness)
+   - High contrast chiaroscuro (mystery, drama)
+   - Neon glow (modern, cyberpunk)
+   - Backlit silhouette (spiritual, dramatic)
+4. MOOD/ATMOSPHERE: emotional tone (tense, hopeful, mysterious, energetic, contemplative)
+5. COMPOSITION: rule of thirds, centered, symmetrical, leading lines, negative space
+6. COLOR PALETTE: dominant colors that match the emotional tone
+
+PROMPT STRUCTURE TEMPLATE:
+"[Style prefix]. [Subject doing action], [camera angle], [lighting description], [mood/atmosphere], [composition detail], [color palette]. ${aspectRatio}"
+
+EXAMPLE (good prompt):
+"Simple stick figure on crumpled paper. A worried stick figure staring at a falling stock chart on a large screen, medium shot from slightly below, dramatic side lighting casting long shadows, tense and anxious atmosphere, rule of thirds composition with figure on left and chart on right, warm amber and deep red tones. 16:9 landscape orientation."
+
+❌ BAD (too vague): "A person looking at stocks. 16:9."
+✅ GOOD (detailed): Include camera, lighting, mood, composition, colors.
+═══════════════════════════════════════
+
 RULES:
 - MINIMUM ${minScenes} scenes, MAXIMUM ${maxScenes} scenes
-- Each scene has EXACTLY ${shotsPerScene} shots (image prompts) in the "imagePrompts" array
-- Each shot must show a DIFFERENT visual angle, moment, or perspective within the same scene
-- Image prompts MUST be in ENGLISH and be detailed (25+ words each)
-- EVERY image prompt MUST include "${aspectRatio}" at the end
+- Image prompts MUST be in ENGLISH, detailed (40+ words each)
+- EVERY image prompt MUST end with "${aspectRatio}"
 - Titles, descriptions in VIETNAMESE
-- voiceover = ACTUAL text from the script for that section
+- voiceover = ACTUAL text from the script for that section (copy exact words)
 - Do NOT include any text outside the JSON array
+- VARY camera angles between shots in the same scene (never repeat same angle)
 
 OUTPUT FORMAT:
-[{"id":1,"title":"Tiêu đề","description":"Mô tả","voiceover":"Lời thoại","imagePrompts":[${shotExamples}]}]
+[{"id":1,"title":"Tiêu đề","description":"Mô tả ngắn","voiceover":"Lời thoại trích từ kịch bản","imagePrompts":["Detailed shot 1...", "Detailed shot 2..."]}]
 
-CRITICAL: "imagePrompts" is an ARRAY of ${shotsPerScene} strings. Your response must start with [ and end with ]`;
+CRITICAL: "imagePrompts" is an ARRAY of 1-${maxShotsPerScene} strings (variable per scene). Your response must start with [ and end with ]`;
 
         const result = await GeminiAPI.generateContent(
             `Chia phân cảnh cho kịch bản YouTube sau:\n\n${cleanScript}`,
@@ -262,7 +298,7 @@ Hãy tạo prompt chi tiết cho từng phân cảnh này.`;
     },
 
     _getManualPromptSystemInstruction(style, shotsPerScene) {
-        return `Bạn là chuyên gia viết prompt cho AI tạo hình ảnh (Midjourney/Stable Diffusion/DALL-E).
+        return `Bạn là MASTER IMAGE PROMPT ENGINEER chuyên viết prompt cho AI tạo hình ảnh (Banana Pro, Grok, Imagen).
 Cụ thể bạn tạo prompt cho video YouTube.
 
 STYLE CỦA KÊNH:
@@ -271,17 +307,25 @@ STYLE CỦA KÊNH:
 
 NHIỆM VỤ:
 - Tôi sẽ cung cấp danh sách tóm tắt các phân cảnh.
-- Bạn hãy "phóng tác" từng tóm tắt đó thành ${shotsPerScene} prompt hình ảnh (shots) chi tiết bằng TIẾNG ANH.
-- Prompt phải bám sát nội dung tóm tắt nhưng thêm chi tiết về ánh sáng, góc máy, biểu cảm để hình ảnh sinh động.
-- Giữ vững style cốt lõi của kênh.
+- Bạn hãy "phóng tác" từng tóm tắt đó thành 1-${shotsPerScene} prompt hình ảnh (shots) chi tiết bằng TIẾNG ANH.
+- Số shots tùy thuộc vào độ phức tạp nội dung: đơn giản → 1 shot, phức tạp → ${shotsPerScene} shots.
+
+MỖI PROMPT PHẢI CÓ (40+ từ):
+1. SUBJECT & ACTION: Ai/cái gì đang làm gì?
+2. CAMERA ANGLE: close-up, medium shot, wide shot, bird's eye, low angle, over-the-shoulder, Dutch angle
+3. LIGHTING: soft diffused, dramatic side light, golden hour, cool blue tones, rim light, backlit, neon glow
+4. MOOD: tense, hopeful, mysterious, energetic, contemplative, dramatic
+5. COMPOSITION: rule of thirds, centered, symmetrical, leading lines, negative space
+6. COLOR PALETTE: dominant colors matching emotional tone
+
+Giữ vững style cốt lõi của kênh. VARY camera angles giữa các shots.
 
 FORMAT OUTPUT (JSON ARRAY):
 [
   {
     "scene": "Nội dung tóm tắt tiếng Việt",
     "imagePrompts": [
-       "English prompt for shot 1...",
-       "English prompt for shot 2..."
+       "[Style]. [Subject + action], [camera angle], [lighting], [mood], [composition], [colors]. [Aspect ratio]"
     ]
   }
 ]
@@ -413,7 +457,7 @@ CHỈ TRẢ VỀ JSON, KHÔNG GIẢI THÍCH.`;
             : '16:9 landscape orientation (1920x1080)';
 
         const result = await GeminiAPI.generateContent(
-            `Tạo ${shotsCount} image prompt chi tiết bằng tiếng Anh cho phân cảnh sau:
+            `Tạo ${shotsCount} image prompt CHUYÊN NGHIỆP bằng tiếng Anh cho phân cảnh sau:
 Title: ${scene.title}
 Description: ${scene.description}
 Voiceover: ${scene.voiceover}
@@ -422,12 +466,16 @@ Style: ${stylePrompt.prefix}
 ${stylePrompt.suffix}
 Aspect ratio: ${aspectRatio}
 
-Mỗi prompt phải mô tả một góc nhìn/khoảnh khắc KHÁC NHAU trong cùng phân cảnh.
-Mỗi prompt PHẢI kết thúc bằng "${aspectRatio}".
-Trả về dạng JSON array của ${shotsCount} string: ["prompt1", "prompt2"${shotsCount > 2 ? ', "prompt3"' : ''}${shotsCount > 3 ? ', "prompt4"' : ''}]
-Chỉ trả về JSON array, không giải thích.`,
+Mỗi prompt phải:
+1. Mô tả một góc nhìn/khoảnh khắc KHÁC NHAU trong cùng phân cảnh
+2. Có 40+ từ, bao gồm: subject + action, camera angle, lighting, mood, composition, color palette
+3. Kết thúc bằng "${aspectRatio}"
+4. Dùng camera angles khác nhau giữa các shots (close-up, medium, wide, bird's eye, low angle...)
+5. Chọn lighting phù hợp cảm xúc (dramatic side light, soft diffused, golden hour, cool tones...)
+
+Trả về dạng JSON array of ${shotsCount} strings. Chỉ trả về JSON array, không giải thích.`,
             '',
-            { temperature: 0.7, maxOutputTokens: 2000 }
+            { temperature: 0.7, maxOutputTokens: 4000 }
         );
 
         try {

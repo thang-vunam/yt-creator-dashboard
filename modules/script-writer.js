@@ -19,17 +19,26 @@ NGUYÊN TẮC CỐT LÕI:
 6. Giữ nhịp: câu ngắn xen câu dài, có pause tự nhiên.
 7. TỪ KHÓA CHÍNH phải xuất hiện ÍT NHẤT 5-7 LẦN khắp kịch bản (HOOK, INTRO, BODY, CTA). Lồng ghép TỰ NHIÊN, không gượng ép.
 
+QUY TẮC TIMESTAMP NGHIÊM NGẶT:
+⚠️ Mỗi PHÚT video = khoảng 130-140 từ kịch bản (tốc độ nói tiếng Việt).
+⚠️ Timestamp phải KHỚP với lượng nội dung thực tế:
+  - Phần 1 phút → viết ÍT NHẤT 130 từ
+  - Phần 2 phút → viết ÍT NHẤT 260 từ  
+  - Phần 3 phút → viết ÍT NHẤT 390 từ
+⚠️ KHÔNG ĐƯỢC ghi timestamp dài (ví dụ "1:00-3:30") rồi chỉ viết 2-3 đoạn ngắn. Nếu một section có timestamp 2.5 phút, phải có ít nhất 300+ từ.
+⚠️ Nếu nội dung một phần ít, thì timestamp cũng phải ngắn tương ứng.
+
 CẤU TRÚC:
-- HOOK (0:00-0:05): Câu mở đầu cực kỳ gây tò mò, BẮT BUỘC chứa từ khóa chính
-- INTRO (0:05-0:30): Đặt vấn đề, tạo đồng cảm
-- BODY: Nội dung chính, chia sections rõ ràng
-- CTA (cuối): Like, comment, subscribe — tự nhiên
+- HOOK (0:00-0:05): 1-2 câu gây tò mò, BẮT BUỘC chứa từ khóa chính (~20 từ)
+- INTRO (0:05-0:30): Đặt vấn đề, tạo đồng cảm (~50-60 từ)
+- BODY: Nội dung chính, chia 3-5 sections, MỖI section tối thiểu 150-200 từ
+- CTA (cuối): Like, comment, subscribe — tự nhiên (~40-50 từ)
 
 FORMAT:
 - **bold** cho heading
 - ─── phân cách sections
-- Ghi timestamp mỗi phần
-- Cuối ghi tổng thời gian`,
+- Ghi timestamp mỗi phần (phải khớp với lượng từ thực tế)
+- Cuối ghi tổng thời gian ước lượng`,
 
             styles: {
                 'storytelling': `\n\nPHONG CÁCH: KỂ CHUYỆN
@@ -62,16 +71,25 @@ CORE PRINCIPLES:
 5. Evoke emotions: empathy, surprise, curiosity.
 6. Maintain rhythm: short and long sentences, natural pauses.
 
+STRICT TIMESTAMP RULES:
+⚠️ Each MINUTE of video = approximately 140-160 words of script.
+⚠️ Timestamps MUST match actual content length:
+  - 1-minute section → write AT LEAST 140 words
+  - 2-minute section → write AT LEAST 280 words
+  - 3-minute section → write AT LEAST 420 words
+⚠️ NEVER write a long timestamp (e.g. "1:00-3:30") with only 2-3 short paragraphs. If a section spans 2.5 minutes, it MUST have 350+ words.
+⚠️ If content is short, the timestamp range must also be short.
+
 STRUCTURE:
-- HOOK (0:00-0:05): Extremely curiosity-inducing opener
-- INTRO (0:05-0:30): Set the problem, create empathy
-- BODY: Main content with clear sections
-- CTA (end): Like, comment, subscribe — natural
+- HOOK (0:00-0:05): Extremely curiosity-inducing opener (~25 words)
+- INTRO (0:05-0:30): Set the problem, create empathy (~60 words)
+- BODY: Main content with 3-5 clear sections, EACH section minimum 150-200 words
+- CTA (end): Like, comment, subscribe — natural (~50 words)
 
 FORMAT:
 - **bold** for headings
 - ─── for section separators
-- Timestamps per section
+- Timestamps per section (must match actual word count)
 - Total estimated duration at end`,
 
             styles: {
@@ -127,12 +145,12 @@ FORMAT:
         if (targetElement) {
             this.currentScript = await GeminiAPI.streamContent(
                 userPrompt, systemPrompt, targetElement,
-                { temperature: 1.0, maxOutputTokens: 8192 }
+                { temperature: 1.0, maxOutputTokens: 8192, purpose: 'quality' }
             );
         } else {
             this.currentScript = await GeminiAPI.generateContent(
                 userPrompt, systemPrompt,
-                { temperature: 1.0, maxOutputTokens: 8192 }
+                { temperature: 1.0, maxOutputTokens: 8192, purpose: 'quality' }
             );
         }
 
