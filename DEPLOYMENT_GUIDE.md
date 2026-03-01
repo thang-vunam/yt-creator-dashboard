@@ -24,7 +24,10 @@ Vì máy bạn chưa cài phần mềm Git, hãy dùng cách kéo-thả trực t
 2. Chọn mục **Pages** ở thanh bên trái.
 3. Ở phần **Branch**, chọn `main` (hoặc `master`) và folder `/ (root)`.
 4. Nhấn **Save**.
-5. Đợi khoảng 1-2 phút, GitHub sẽ cung cấp cho bạn một đường Link công khai.
+5. **QUAN TRỌNG: Phải chờ 1-3 phút**. Link sẽ không hiện ra ngay lập tức.
+   - Bạn có thể vào tab **Actions** ở thanh menu trên cùng Repo để thấy một tiến trình đang chạy (tên là *pages-build-deployment*).
+   - Khi tiến trình này hiện nút xanh ✅, quay lại tab **Settings > Pages**, bạn sẽ thấy thông báo: *"Your site is live at [link của bạn]"*.
+6. Copy link đó và mở trên điện thoại!
 
 ## Cách 2: Chạy trong mạng nội bộ (Dùng cho điện thoại cùng WiFi)
 
@@ -35,11 +38,27 @@ Nếu bạn chỉ muốn mở trên điện thoại khi đang ở nhà:
 
 ---
 
-## ⚠️ Lưu ý QUAN TRỌNG về bảo mật
+## ⚠️ Lưu ý QUAN TRỌNG về bảo mật và API Key
 
-1. **API Keys**: Ứng dụng này lưu API Key trong trình duyệt (localStorage) của người dùng, nên bạn **không nên** viết cứng API Key vào code trước khi đẩy lên GitHub. 
-2. **Settings**: Khi mở trang web trên thiết bị mới, bạn cần vào mục **Cài đặt** trong ứng dụng để nhập lại Gemini API Key.
-3. **Dữ liệu**: Vì dùng `localStorage`, dữ liệu Project giữa máy tính và điện thoại sẽ **không tự đồng bộ**. Bạn có thể dùng chức năng **Export Project** (Xuất file .json) từ máy tính và **Import** vào điện thoại để chuyển dữ liệu.
+### 1. Vấn đề bảo mật (CỰC KỲ QUAN TRỌNG)
+Nếu bạn đưa ứng dụng lên một Repository **Public** (Công khai):
+- **KHÔNG NÊN** viết cứng (hardcode) API Key vào code.
+- GitHub có hệ thống tự động quét và sẽ **vô hiệu hóa** key của bạn ngay lập tức nếu phát hiện nó nằm công khai.
+- Ngoài ra, người khác có thể lấy key của bạn để sử dụng, làm bạn bị tốn phí hoặc bị khóa tài khoản.
+
+### 2. Cách add API cứng (Nếu bạn dùng Repo PRIVATE)
+Nếu bạn tạo Repository ở chế độ **Private** (Riêng tư), bạn có thể làm theo cách sau để không phải nhập lại key trên iPad:
+
+**Mở file `modules/gemini-api.js`:**
+Tìm dòng số 12: `DEFAULT_KEY: '...'`, thay đoạn trong ngoặc bằng Gemini API Key của bạn.
+
+**Mở file `modules/analysis-engine.js`:**
+Tìm dòng số 9: `DEFAULT_KEY: '...'`, thay đoạn trong ngoặc bằng YouTube API Key của bạn.
+
+**Sau đó:** Đẩy code (upload) lại lên GitHub. Ứng dụng sẽ tự dùng các key này khi bạn mở trên thiết bị mới.
+
+### 3. Dữ liệu Project
+Vì dùng `localStorage`, dữ liệu giữa máy tính và iPad sẽ không tự đồng bộ. Hãy dùng tính năng **Export/Import Project** để chuyển dữ liệu qua lại.
 
 ## Các file cần thiết cho GitHub
 - `index.html`: File chính.

@@ -39,7 +39,68 @@ const app = {
         // Setup drag & drop for watermark
         this._setupDragDrop();
 
+        // Update model badge after detection
+        this._updateModelBadge();
+
         console.log('✅ YouTube Creator Dashboard initialized', restored ? '(restored from session)' : '(fresh)');
+    },
+
+    _updateModelBadge() {
+        // Wait for model detection to complete, then update UI
+        const formatModel = (name) => {
+            if (!name) return '';
+            // "gemini-flash-latest" → "Gemini Flash (Latest)"
+            // "gemini-2.5-flash" → "Gemini 2.5 Flash"
+            // "gemini-3.0-pro" → "Gemini 3.0 Pro"
+            return name
+                .replace('gemini-', 'Gemini ')
+                .replace('-latest', ' (Latest)')
+                .replace('-flash', ' Flash')
+                .replace('-pro', ' Pro')
+                .replace(/-/g, '.');
+        };
+
+        const check = () => {
+            const flash = GeminiAPI.detectedFlashModel;
+            const pro = GeminiAPI.detectedProModel;
+
+            const badge = document.getElementById('modelBadge');
+            const sidebar = document.getElementById('sidebarModelInfo');
+
+            if (flash || pro) {
+                // Header badge - compact
+                if (badge) {
+                    let badgeText = '';
+                    if (flash) badgeText += `⚡ ${formatModel(flash)}`;
+                    if (pro) badgeText += `${flash ? ' | ' : ''}💎 ${formatModel(pro)}`;
+                    badge.textContent = badgeText;
+                    badge.style.display = 'inline-block';
+                }
+
+                // Sidebar - detailed
+                if (sidebar) {
+                    sidebar.innerHTML = `
+                        <div style="margin-bottom:0.25rem;color:var(--accent);">🤖 AI Models</div>
+                        ${flash ? `<div>⚡ Flash: <strong>${formatModel(flash)}</strong></div>` : ''}
+                        ${pro ? `<div>💎 Pro: <strong>${formatModel(pro)}</strong></div>` : ''}
+                    `;
+                    sidebar.style.display = 'block';
+                }
+            } else if (GeminiAPI.isConfigured()) {
+                // Models not detected yet, retry
+                setTimeout(check, 1000);
+            } else {
+                if (badge) {
+                    badge.textContent = '⚠️ Chưa có API Key';
+                    badge.style.display = 'inline-block';
+                    badge.style.background = 'rgba(239,68,68,0.15)';
+                    badge.style.color = '#f87171';
+                    badge.style.borderColor = 'rgba(239,68,68,0.3)';
+                }
+            }
+        };
+        // Delay slightly to allow GeminiAPI.init() to complete
+        setTimeout(check, 500);
     },
 
     // ═══════════════════════════════════════════
@@ -91,6 +152,9 @@ const app = {
         if (!SceneManager.selectedStyle || SceneManager.selectedStyle !== defaultStyles[channel]) {
             SceneManager.selectStyle(defaultStyles[channel] || 'stick-crumpled');
         }
+
+        // Update trending niche info
+        this._updateTrendingNicheUI();
     },
 
     _updateChannelUI() {
@@ -100,8 +164,77 @@ const app = {
     },
 
     // ═══════════════════════════════════════════
-    // STEP 1: KEYWORD RESEARCH
+    // STEP 1: KEYWORD RESEARCH + TRENDING
     // ═══════════════════════════════════════════
+
+    switchResearchTab(tab) {
+        // Toggle tab buttons
+        document.getElementById('researchTabKeyword')?.classList.toggle('active', tab === 'keyword');
+        document.getElementById('researchTabTrending')?.classList.toggle('active', tab === 'trending');
+
+        // Toggle tab content
+        document.getElementById('researchContentKeyword')?.classList.toggle('active', tab === 'keyword');
+        document.getElementById('researchContentTrending')?.classList.toggle('active', tab === 'trending');
+
+        // Update niche info when switching to trending tab
+        if (tab === 'trending') {
+            this._updateTrendingNicheUI();
+        }
+    },
+
+    _updateTrendingNicheUI() {
+        const niche = window.AnalysisEngine?.NICHE_CONTEXT?.[this.currentChannel];
+        if (!niche) return;
+        const nameEl = document.getElementById('trendingChannelName');
+        const iconEl = document.getElementById('trendingNicheIcon');
+        const labelEl = document.getElementById('trendingNicheLabel');
+        if (nameEl) nameEl.textContent = niche.name;
+        if (iconEl) iconEl.textContent = niche.icon;
+        if (labelEl) labelEl.textContent = niche.name;
+    },
+
+    async discoverTrending() {
+        const btn = document.getElementById('trendingBtn');
+        const refreshBtn = document.getElementById('trendingRefreshBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="loading-spinner"></span> Đang phân tích xu hướng...';
+
+        const results = document.getElementById('trendingResults');
+        results.style.display = 'block';
+        results.innerHTML = '<div class="skeleton" style="height: 120px; margin-bottom: 0.75rem;"></div>'.repeat(4);
+
+        try {
+            if (!window.AnalysisEngine) throw new Error('Module AnalysisEngine chưa được tải.');
+            await AnalysisEngine.discoverTrending(this.currentChannel);
+            AnalysisEngine.renderTrendingResults('trendingResults');
+            this.toast('Đã tìm 10 từ khóa trending! 🔥', 'success');
+            if (refreshBtn) refreshBtn.style.display = 'inline-flex';
+        } catch (error) {
+            results.innerHTML = `<div class="card"><span style="color:var(--error);">❌ ${error.message}</span></div>`;
+            this.toast(`Lỗi: ${error.message}`, 'error');
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = '🔥 Khám Phá Trending';
+    },
+
+    useTrendingKeyword(keyword) {
+        // Switch to keyword research tab and fill the keyword
+        this.switchResearchTab('keyword');
+        const input = document.getElementById('researchKeyword');
+        if (input) {
+            input.value = keyword;
+            input.focus();
+            // Visual feedback
+            input.style.borderColor = 'var(--accent)';
+            input.style.boxShadow = '0 0 0 3px var(--accent-dim)';
+            setTimeout(() => {
+                input.style.borderColor = '';
+                input.style.boxShadow = '';
+            }, 2000);
+        }
+        this.toast(`Đã chọn keyword: "${keyword}" — Nhấn Nghiên Cứu để tiếp tục! 🎯`, 'success');
+    },
 
     async runResearch() {
         const keyword = document.getElementById('researchKeyword')?.value?.trim();
@@ -558,7 +691,18 @@ const app = {
         SceneManager.renderStyleGrid();
         SEOOptimizer.results = null;
         if (typeof ThumbnailGenerator !== 'undefined') ThumbnailGenerator.results = null;
-        if (typeof AnalysisEngine !== 'undefined') AnalysisEngine.results = null;
+        if (typeof AnalysisEngine !== 'undefined') {
+            AnalysisEngine.results = null;
+            AnalysisEngine.trendingResults = null;
+        }
+
+        // Reset trending results UI
+        const trendingResults = document.getElementById('trendingResults');
+        if (trendingResults) trendingResults.style.display = 'none';
+        const trendingRefreshBtn = document.getElementById('trendingRefreshBtn');
+        if (trendingRefreshBtn) trendingRefreshBtn.style.display = 'none';
+        // Reset to keyword tab
+        this.switchResearchTab?.('keyword');
 
         // Reset nav step indicators
         document.querySelectorAll('.nav-item.completed').forEach(el => el.classList.remove('completed'));

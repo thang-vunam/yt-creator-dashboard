@@ -30,6 +30,8 @@
                 </div>
             </div>
             <div class="header-right">
+                <span id="modelBadge"
+                    style="font-size:0.7rem;padding:0.25rem 0.6rem;border-radius:99px;background:rgba(99,102,241,0.15);color:#818cf8;border:1px solid rgba(99,102,241,0.3);white-space:nowrap;display:none;"></span>
                 <span class="project-name" id="projectName">Dự án mới</span>
                 <button class="btn btn-sm btn-secondary" onclick="app.saveProject()">💾 Lưu</button>
                 <button class="btn btn-sm btn-ghost" onclick="app.showSettings()">⚙️</button>
@@ -96,6 +98,9 @@
                     <div id="pipelineStatus" style="font-size: 0.8rem; color: var(--text-secondary);">
                         Bước 1 / 6 — Nghiên cứu từ khóa
                     </div>
+                    <div id="sidebarModelInfo"
+                        style="margin-top:0.5rem;font-size:0.7rem;color:var(--text-muted);line-height:1.4;display:none;">
+                    </div>
                 </div>
             </div>
         </aside>
@@ -107,33 +112,77 @@
             <div class="panel active" id="panel-research">
                 <div class="panel-header">
                     <h2>🔍 Nghiên Cứu Từ Khóa</h2>
-                    <p>Phân tích keyword, đối thủ và tìm góc tiếp cận trước khi viết kịch bản</p>
+                    <p>Phân tích keyword, đối thủ và khám phá xu hướng trending</p>
                 </div>
 
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-title">🎯 Keyword Seed</div>
+                <!-- Research Tabs -->
+                <div class="research-tabs">
+                    <button class="research-tab active" id="researchTabKeyword"
+                        onclick="app.switchResearchTab('keyword')">
+                        🔍 Nghiên Cứu Từ Khóa
+                    </button>
+                    <button class="research-tab" id="researchTabTrending" onclick="app.switchResearchTab('trending')">
+                        🔥 Trending & Viral
+                    </button>
+                </div>
+
+                <!-- Tab 1: Keyword Research (existing) -->
+                <div class="research-tab-content active" id="researchContentKeyword">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">🎯 Keyword Seed</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Nhập từ khóa chính muốn nghiên cứu</label>
+                            <input type="text" class="input-field" id="researchKeyword"
+                                placeholder="Ví dụ: đầu tư chứng khoán cho người mới">
+                        </div>
+                        <div class="btn-row">
+                            <button class="btn btn-primary btn-lg" id="researchBtn" onclick="app.runResearch()">
+                                🔍 Nghiên Cứu
+                            </button>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Nhập từ khóa chính muốn nghiên cứu</label>
-                        <input type="text" class="input-field" id="researchKeyword"
-                            placeholder="Ví dụ: đầu tư chứng khoán cho người mới">
-                    </div>
-                    <div class="btn-row">
-                        <button class="btn btn-primary btn-lg" id="researchBtn" onclick="app.runResearch()">
-                            🔍 Nghiên Cứu
-                        </button>
+
+                    <div id="researchResults" style="display: none;"></div>
+
+                    <div id="researchFooter" style="display: none;">
+                        <div class="btn-row" style="justify-content: flex-end; margin-top: 1rem;">
+                            <button class="btn btn-primary" onclick="app.proceedToScript()">
+                                Tiếp → Viết Kịch Bản (dùng keyword này)
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div id="researchResults" style="display: none;"></div>
-
-                <div id="researchFooter" style="display: none;">
-                    <div class="btn-row" style="justify-content: flex-end; margin-top: 1rem;">
-                        <button class="btn btn-primary" onclick="app.proceedToScript()">
-                            Tiếp → Viết Kịch Bản (dùng keyword này)
-                        </button>
+                <!-- Tab 2: Trending Discovery (NEW) -->
+                <div class="research-tab-content" id="researchContentTrending">
+                    <div class="card trending-hero-card">
+                        <div class="card-header">
+                            <div class="card-title">🔥 Khám Phá Từ Khóa Trending</div>
+                        </div>
+                        <p class="trending-desc">
+                            AI sẽ phân tích xu hướng YouTube Việt Nam và gợi ý <strong>10 từ khóa/chủ đề</strong>
+                            đang hot cho kênh <strong id="trendingChannelName">Đầu tư & Tài chính</strong>.
+                        </p>
+                        <div class="trending-niche-info" id="trendingNicheInfo">
+                            <span class="trending-niche-icon" id="trendingNicheIcon">💰</span>
+                            <span id="trendingNicheLabel">Đầu tư & Tài chính</span>
+                            <span class="trending-niche-hint">← Đổi kênh ở header để thay đổi niche</span>
+                        </div>
+                        <div class="btn-row">
+                            <button class="btn btn-primary btn-lg trending-discover-btn" id="trendingBtn"
+                                onclick="app.discoverTrending()">
+                                🔥 Khám Phá Trending
+                            </button>
+                            <button class="btn btn-secondary" id="trendingRefreshBtn" onclick="app.discoverTrending()"
+                                style="display:none;">
+                                🔄 Tìm Lại
+                            </button>
+                        </div>
                     </div>
+
+                    <div id="trendingResults" style="display: none;"></div>
                 </div>
             </div>
 
@@ -257,11 +306,11 @@ Cảnh 3: Biểu đồ bắt đầu đi lên và anh ta mỉm cười..."></text
 
                     <div class="btn-row" style="margin-top: 0.75rem; align-items: center;">
                         <div class="form-group" style="margin-bottom: 0; min-width: 160px;">
-                            <label style="font-size: 0.75rem; margin-bottom: 0.25rem;">🖼️ Số shot/phân cảnh</label>
+                            <label style="font-size: 0.75rem; margin-bottom: 0.25rem;">🖼️ Tối đa shots/cảnh</label>
                             <select class="select-field" id="shotsPerScene" style="padding: 0.5rem;">
-                                <option value="2" selected>2 shots (khuyến nghị)</option>
-                                <option value="3">3 shots (chi tiết)</option>
-                                <option value="4">4 shots (rất chi tiết)</option>
+                                <option value="2">2 shots (nhanh)</option>
+                                <option value="3" selected>3 shots (khuyến nghị)</option>
+                                <option value="4">4 shots (chi tiết)</option>
                             </select>
                         </div>
                         <button class="btn btn-primary" id="breakdownBtn" onclick="app.breakdownScenes()">
