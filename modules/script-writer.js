@@ -17,7 +17,10 @@ NGUYÊN TẮC CỐT LÕI:
 4. Dùng ví dụ thực tế, câu chuyện minh họa.
 5. Tạo cảm xúc: empathy, surprise, curiosity, inspiration.
 6. Giữ nhịp: câu ngắn xen câu dài, có pause tự nhiên.
-7. TỪ KHÓA CHÍNH: CẤM lặp lại nguyên xi từ khóa chính quá 2 lần. Hãy linh hoạt dùng các từ đồng nghĩa, rút gọn tự nhiên trong văn nói để tránh cảm giác bị nhồi nhét.
+7. XỬ LÝ TỪ KHÓA (RẤT QUAN TRỌNG): TUYỆT ĐỐI KHÔNG BÊ NGUYÊN XI cụm từ khóa dài lặp đi lặp lại.
+   ❌ SAI (Robot đọc): "Chủ đề hôm nay là [Từ khóa]. Lý do [Từ khóa] quan trọng là..."
+   ✅ ĐÚNG (Người đọc): "Chủ đề hôm nay là [Từ khóa]. Lý do vấn đề này/câu chuyện này quan trọng là..."
+   Chỉ đọc nguyên chuỗi từ khóa đúng 1-2 lần ở đầu video. Ở Phần Thân phải dùng từ đồng nghĩa, rút gọn hoặc đại từ thay thế.
 8. HÌNH ẢNH (Visual Cues): BẮT BUỘC cứ mỗi 150-200 chữ ở Phần Thân (BODY) phải chèn 1 ghi chú (ví dụ: *(Hiệu ứng: ...)* hoặc *(Chèn Footage: ...)*) để giữ chân người xem.
 
 QUY TẮC TIMESTAMP NGHIÊM NGẶT:
@@ -142,8 +145,8 @@ FORMAT:
         }
 
         const userPrompt = lang === 'vi'
-            ? `Viết kịch bản video YouTube về chủ đề: "${topic}"\n\nTỪ KHÓA CHÍNH: "${topic}" — Lồng ghép ý nghĩa của từ khóa một cách linh hoạt, TỰ NHIÊN như văn nói, tuyệt đối không lặp lại nguyên xi cụm từ này nhiều lần gây nhàm chán.${notes ? `\n\nGhi chú thêm: ${notes}` : ''}${keywordContext}`
-            : `Write a YouTube video script about: "${topic}"\n\nPRIMARY KEYWORD: "${topic}" — Weave the meaning naturally, absolutely do NOT copy-paste the exact phrase repeatedly.${notes ? `\n\nAdditional notes: ${notes}` : ''}${keywordContext}`;
+            ? `Viết kịch bản video YouTube về chủ đề: "${topic}"\n\nTỪ KHÓA CHÍNH: "${topic}"\n⚠️ BÁO ĐỘNG ĐỎ: Đây là một cụm từ dài. Bạn CHỈ ĐƯỢC PHÉP dùng nguyên văn cụm từ này 1 LẦN DUY NHẤT ở đoạn Mở đầu. Xuyên suốt phần Intro, Body, CTA: BẮT BUỘC phải dùng đại từ thay thế (ví dụ: "làn sóng này", "nút thắt kia", "thị trường của chúng ta") hoặc các cụm từ ngắn gọn. CẤM BÊ NGUYÊN XI CHUỖI TỪ KHÓA CHÈN XUỐNG DƯỚI!${notes ? `\n\nGhi chú thêm: ${notes}` : ''}${keywordContext}`
+            : `Write a YouTube video script about: "${topic}"\n\nPRIMARY KEYWORD: "${topic}"\n⚠️ RED ALERT: This is a long phrase. You are ONLY ALLOWED to use the exact phrase ONCE in the Hook. In the Body and CTA, you MUST use short synonyms or pronouns (e.g. "this trend", "this issue"). DO NOT COPY-PASTE the exact keyword phrase repeatedly!${notes ? `\n\nAdditional notes: ${notes}` : ''}${keywordContext}`;
 
         if (targetElement) {
             this.currentScript = await GeminiAPI.streamContent(
