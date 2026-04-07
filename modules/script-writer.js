@@ -17,7 +17,8 @@ NGUYÊN TẮC CỐT LÕI:
 4. Dùng ví dụ thực tế, câu chuyện minh họa.
 5. Tạo cảm xúc: empathy, surprise, curiosity, inspiration.
 6. Giữ nhịp: câu ngắn xen câu dài, có pause tự nhiên.
-7. TỪ KHÓA CHÍNH phải xuất hiện ÍT NHẤT 5-7 LẦN khắp kịch bản (HOOK, INTRO, BODY, CTA). Lồng ghép TỰ NHIÊN, không gượng ép.
+7. TỪ KHÓA CHÍNH: CẤM lặp lại nguyên xi từ khóa chính quá 2 lần. Hãy linh hoạt dùng các từ đồng nghĩa, rút gọn tự nhiên trong văn nói để tránh cảm giác bị nhồi nhét.
+8. HÌNH ẢNH (Visual Cues): BẮT BUỘC cứ mỗi 150-200 chữ ở Phần Thân (BODY) phải chèn 1 ghi chú (ví dụ: *(Hiệu ứng: ...)* hoặc *(Chèn Footage: ...)*) để giữ chân người xem.
 
 QUY TẮC TIMESTAMP NGHIÊM NGẶT:
 ⚠️ Mỗi PHÚT video = khoảng 130-140 từ kịch bản (tốc độ nói tiếng Việt).
@@ -70,6 +71,8 @@ CORE PRINCIPLES:
 4. Real examples, vivid stories.
 5. Evoke emotions: empathy, surprise, curiosity.
 6. Maintain rhythm: short and long sentences, natural pauses.
+7. PRIMARY KEYWORD: Do NOT repeat the exact primary keyword more than twice. Use natural synonyms to avoid robotic keyword stuffing.
+8. VISUAL CUES: MANDATORY to insert a visual cue (e.g. *(Visual: ...)* or *(B-roll: ...)*) every 150-200 words in the BODY to guide the video edits and retain viewers.
 
 STRICT TIMESTAMP RULES:
 ⚠️ Each MINUTE of video = approximately 140-160 words of script.
@@ -139,8 +142,8 @@ FORMAT:
         }
 
         const userPrompt = lang === 'vi'
-            ? `Viết kịch bản video YouTube về chủ đề: "${topic}"\n\nTỪ KHÓA CHÍNH: "${topic}" — phải xuất hiện ít nhất 5-7 lần xuyên suốt kịch bản (HOOK, INTRO, BODY, CTA). Giữ NGUYÊN GỐC từ khóa, không diễn giải hay thay đổi.${notes ? `\n\nGhi chú thêm: ${notes}` : ''}${keywordContext}`
-            : `Write a YouTube video script about: "${topic}"\n\nPRIMARY KEYWORD: "${topic}" — must appear at least 5-7 times throughout the script (HOOK, INTRO, BODY, CTA). Keep the keyword EXACTLY as written.${notes ? `\n\nAdditional notes: ${notes}` : ''}${keywordContext}`;
+            ? `Viết kịch bản video YouTube về chủ đề: "${topic}"\n\nTỪ KHÓA CHÍNH: "${topic}" — Lồng ghép ý nghĩa của từ khóa một cách linh hoạt, TỰ NHIÊN như văn nói, tuyệt đối không lặp lại nguyên xi cụm từ này nhiều lần gây nhàm chán.${notes ? `\n\nGhi chú thêm: ${notes}` : ''}${keywordContext}`
+            : `Write a YouTube video script about: "${topic}"\n\nPRIMARY KEYWORD: "${topic}" — Weave the meaning naturally, absolutely do NOT copy-paste the exact phrase repeatedly.${notes ? `\n\nAdditional notes: ${notes}` : ''}${keywordContext}`;
 
         if (targetElement) {
             this.currentScript = await GeminiAPI.streamContent(
